@@ -104,9 +104,9 @@ func (sp *SAMLServiceProvider) Metadata() (*types.EntityDescriptor, error) {
 						},
 					},
 					EncryptionMethods: []types.EncryptionMethod{
-						{Algorithm: types.MethodAES128GCM},
-						{Algorithm: types.MethodAES128CBC},
-						{Algorithm: types.MethodAES256CBC},
+						{Algorithm: types.MethodAES128GCM, DigestMethod: types.DigestMethod{Algorithm: types.MethodSHA256}},
+						{Algorithm: types.MethodAES128CBC, DigestMethod: types.DigestMethod{Algorithm: types.MethodSHA256}},
+						{Algorithm: types.MethodAES256CBC, DigestMethod: types.DigestMethod{Algorithm: types.MethodSHA256}},
 					},
 				},
 			},
