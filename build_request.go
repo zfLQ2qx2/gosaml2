@@ -153,7 +153,39 @@ func (sp *SAMLServiceProvider) buildAuthURLFromDocument(relayState, binding stri
 		ctx := sp.SigningContext()
 		qs.Add("SigAlg", ctx.GetSignatureMethodIdentifier())
 		var rawSignature []byte
-		if rawSignature, err = ctx.SignString(qs.Encode()); err != nil {
+        //qs.Encode() sorts the keys (See https://golang.org/pkg/net/url/#Values.Encode). 
+        //If RelayState parameter is present then RelayState parameter 
+        //will be put first by Encode(). Hence encode them separately and concatenate.
+        //Signature string has to have parameters in the order - SAMLRequest=value&RelayState=value&SigAlg=value.
+        //(See Section 3.4.4.1 saml-bindings-2.0-os.pdf).
+        var orderedParams = []string{"SAMLRequest", "RelayState", "SigAlg"}
+
+        var paramValueMap = make(map[string]string)
+        paramValueMap["SAMLRequest"] = base64.StdEncoding.EncodeToString(buf.Bytes())
+        if relayState != "" {
+            paramValueMap["RelayState"] = relayState
+        }
+        paramValueMap["SigAlg"] = ctx.GetSignatureMethodIdentifier()
+
+        ss := ""
+
+        for _, k := range orderedParams {
+            v, ok := paramValueMap[k] 
+            if ok {
+                //Add the value after URL encoding.
+                u := url.Values{}
+                u.Add(k, v)
+                e := u.Encode()
+                if ss != "" {
+                    ss += "&" + e
+                } else {
+                    ss = e
+                }
+            }
+        }
+
+        //Now generate the signature on the string of ordered parameters.
+		if rawSignature, err = ctx.SignString(ss); err != nil {
 			return "", fmt.Errorf("unable to sign query string of redirect URL: %v", err)
 		}
 
@@ -161,6 +193,7 @@ func (sp *SAMLServiceProvider) buildAuthURLFromDocument(relayState, binding stri
 		qs.Add("Signature", base64.StdEncoding.EncodeToString(rawSignature))
 	}
 
+    //Here the parameters may appear in any order.
 	parsedUrl.RawQuery = qs.Encode()
 	return parsedUrl.String(), nil
 }
