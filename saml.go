@@ -24,6 +24,7 @@ func (serr ErrSaml) Error() string {
 
 type SAMLServiceProvider struct {
 	IdentityProviderSSOURL string
+	IdentityProviderSSOBinding string
 	IdentityProviderIssuer string
 
 	AssertionConsumerServiceURL string
