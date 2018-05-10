@@ -207,21 +207,8 @@ func (sp *SAMLServiceProvider) BuildAuthURLRedirect(relayState string, doc *etre
 	return sp.buildAuthURLFromDocument(relayState, BindingHttpRedirect, doc)
 }
 
-//BuildAuthBodyPost builds the POST body to be sent to IDP.
-func (sp *SAMLServiceProvider) BuildAuthBodyPost(relayState string) ([]byte, error) {
-    var doc *etree.Document
-    var err error
 
-    if sp.SignAuthnRequests {
-        doc, err = sp.BuildAuthRequestDocument()
-    } else {
-        doc, err = sp.BuildAuthRequestDocumentNoSig()
-    }
-
-    if err != nil {
-        return nil, err
-    }
-
+func (sp *SAMLServiceProvider) buildAuthBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
 	reqBuf, err := doc.WriteToBytes()
     if err != nil {
         return nil, err
@@ -255,6 +242,32 @@ func (sp *SAMLServiceProvider) BuildAuthBodyPost(relayState string) ([]byte, err
 
     return rv.Bytes(), nil
 }
+
+//BuildAuthBodyPost builds the POST body to be sent to IDP.
+func (sp *SAMLServiceProvider) BuildAuthBodyPost(relayState string) ([]byte, error) {
+    var doc *etree.Document
+    var err error
+
+    if sp.SignAuthnRequests {
+        doc, err = sp.BuildAuthRequestDocument()
+    } else {
+        doc, err = sp.BuildAuthRequestDocumentNoSig()
+    }
+
+    if err != nil {
+        return nil, err
+    }
+
+    return sp.buildAuthBodyPostFromDocument(relayState, doc)
+}
+
+//BuildAuthBodyPostFromDocument builds the POST body to be sent to IDP.
+//It takes the AuthnRequest xml as input.
+func (sp *SAMLServiceProvider) BuildAuthBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
+    return sp.buildAuthBodyPostFromDocument(relayState, doc)
+}
+
+
 
 // BuildAuthURL builds redirect URL to be sent to principal
 func (sp *SAMLServiceProvider) BuildAuthURL(relayState string) (string, error) {
