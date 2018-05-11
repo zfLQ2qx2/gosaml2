@@ -5,6 +5,20 @@ import (
 	"time"
 )
 
+// UnverifiedBaseResponse extracts several basic attributes of a SAML Response
+// which may be useful in deciding how to validate the Response. An UnverifiedBaseResponse
+// is parsed by this library prior to any validation of the Response, so the
+// values it contains may have been supplied by an attacker and should not be
+// trusted as authoritative from the IdP.
+type UnverifiedBaseResponse struct {
+	XMLName      xml.Name `xml:"urn:oasis:names:tc:SAML:2.0:protocol Response"`
+	ID           string   `xml:"ID,attr"`
+	InResponseTo string   `xml:"InResponseTo,attr"`
+	Destination  string   `xml:"Destination,attr"`
+	Version      string   `xml:"Version,attr"`
+	Issuer       *Issuer  `xml:"Issuer"`
+}
+
 type Response struct {
 	XMLName             xml.Name             `xml:"urn:oasis:names:tc:SAML:2.0:protocol Response"`
 	ID                  string               `xml:"ID,attr"`
@@ -56,6 +70,16 @@ type Subject struct {
 	XMLName             xml.Name             `xml:"urn:oasis:names:tc:SAML:2.0:assertion Subject"`
 	NameID              *NameID              `xml:"NameID"`
 	SubjectConfirmation *SubjectConfirmation `xml:"SubjectConfirmation"`
+}
+
+type AuthnContext struct {
+	XMLName              xml.Name              `xml:urn:oasis:names:tc:SAML:2.0:assertion AuthnContext"`
+	AuthnContextClassRef *AuthnContextClassRef `xml:"AuthnContextClassRef"`
+}
+
+type AuthnContextClassRef struct {
+	XMLName xml.Name `xml:urn:oasis:names:tc:SAML:2.0:assertion AuthnContextClassRef"`
+	Value   string   `xml:",chardata"`
 }
 
 type NameID struct {
@@ -125,7 +149,8 @@ type AttributeValue struct {
 }
 
 type AuthnStatement struct {
-	XMLName             xml.Name   `xml:"AuthnStatement"`
-	AuthnInstant        *time.Time `xml:"AuthnInstant,attr,omitempty"`
-	SessionNotOnOrAfter *time.Time `xml:"SessionNotOnOrAfter,attr,omitempty"`
+	XMLName             xml.Name      `xml:"urn:oasis:names:tc:SAML:2.0:assertion AuthnStatement"`
+	AuthnInstant        *time.Time    `xml:"AuthnInstant,attr,omitempty"`
+	SessionNotOnOrAfter *time.Time    `xml:"SessionNotOnOrAfter,attr,omitempty"`
+	AuthnContext        *AuthnContext `xml:"AuthnContext"`
 }
