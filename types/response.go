@@ -33,6 +33,16 @@ type Response struct {
 	SignatureValidated  bool                 `xml:"-"` // not read, not dumped
 }
 
+type LogoutResponse struct {
+	XMLName             xml.Name             `xml:"urn:oasis:names:tc:SAML:2.0:protocol LogoutResponse"`
+	ID                  string               `xml:"ID,attr"`
+	InResponseTo        string               `xml:"InResponseTo,attr"`
+	Version             string               `xml:"Version,attr"`
+	IssueInstant        time.Time            `xml:"IssueInstant,attr"`
+	Status              *Status              `xml:"Status"`
+	Issuer              *Issuer              `xml:"Issuer"`
+}
+
 type Status struct {
 	XMLName    xml.Name    `xml:"urn:oasis:names:tc:SAML:2.0:protocol Status"`
 	StatusCode *StatusCode `xml:"StatusCode"`

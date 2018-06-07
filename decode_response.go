@@ -335,3 +335,25 @@ func parseResponse(xml []byte) (*etree.Document, *etree.Element, error) {
 
 	return doc, el, nil
 }
+
+// DecodeUnverifiedLogoutResponse decodes several attributes from a SAML Logout response, without doing any verifications.
+func DecodeUnverifiedLogoutResponse(encodedResponse string) (*types.LogoutResponse, error) {
+	raw, err := base64.StdEncoding.DecodeString(encodedResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	var response *types.LogoutResponse
+
+	err = maybeDeflate(raw, func(maybeXML []byte) error {
+		response = &types.LogoutResponse{}
+		return xml.Unmarshal(maybeXML, response)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+
