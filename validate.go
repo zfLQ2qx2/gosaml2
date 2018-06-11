@@ -229,3 +229,67 @@ func (sp *SAMLServiceProvider) Validate(response *types.Response) error {
 
 	return nil
 }
+
+func (sp *SAMLServiceProvider) ValidateDecodedLogoutResponse(response *types.LogoutResponse) error {
+	err := sp.validateLogoutResponseAttributes(response)
+	if err != nil {
+		return err
+	}
+
+	issuer := response.Issuer
+	if issuer == nil {
+		// FIXME?: SAML Core 2.0 Section 3.2.2 has Response.Issuer as [Optional]
+		return ErrMissingElement{Tag: IssuerTag}
+	}
+
+	if sp.IdentityProviderIssuer != "" && response.Issuer.Value != sp.IdentityProviderIssuer {
+		return ErrInvalidValue{
+			Key:      IssuerTag,
+			Expected: sp.IdentityProviderIssuer,
+			Actual:   response.Issuer.Value,
+		}
+	}
+
+	status := response.Status
+	if status == nil {
+		return ErrMissingElement{Tag: StatusTag}
+	}
+
+	statusCode := status.StatusCode
+	if statusCode == nil {
+		return ErrMissingElement{Tag: StatusCodeTag}
+	}
+
+	if statusCode.Value != StatusCodeSuccess {
+		return ErrInvalidValue{
+			Key:      StatusCodeTag,
+			Expected: StatusCodeSuccess,
+			Actual:   statusCode.Value,
+		}
+	}
+
+	return nil
+}
+
+func (sp *SAMLServiceProvider) ValidateDecodedLogoutRequest(request *LogoutRequest) error {
+	err := sp.validateLogoutRequestAttributes(request)
+	if err != nil {
+		return err
+	}
+
+	issuer := request.Issuer
+	if issuer == nil {
+		// FIXME?: SAML Core 2.0 Section 3.2.2 has Response.Issuer as [Optional]
+		return ErrMissingElement{Tag: IssuerTag}
+	}
+
+	if sp.IdentityProviderIssuer != "" && request.Issuer.Value != sp.IdentityProviderIssuer {
+		return ErrInvalidValue{
+			Key:      IssuerTag,
+			Expected: sp.IdentityProviderIssuer,
+			Actual:   request.Issuer.Value,
+		}
+	}
+
+	return nil
+}
