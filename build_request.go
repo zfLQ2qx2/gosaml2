@@ -216,28 +216,50 @@ func (sp *SAMLServiceProvider) buildAuthBodyPostFromDocument(relayState string, 
 
     encodedReqBuf := base64.StdEncoding.EncodeToString(reqBuf)
 
-	tmpl := template.Must(template.New("saml-post-form").Parse(`` +
-		`<form method="POST" action="{{.URL}}" id="SAMLRequestForm">` +
-		`<input type="hidden" name="SAMLRequest" value="{{.SAMLRequest}}" />` +
-		`<input type="hidden" name="RelayState" value="{{.RelayState}}" />` +
-		`<input id="SAMLSubmitButton" type="submit" value="Submit" />` +
-		`</form>` +
-		`<script>document.getElementById('SAMLSubmitButton').style.visibility="hidden";` +
-		`document.getElementById('SAMLRequestForm').submit();</script>`))
+    var tmpl *template.Template
+    var rv bytes.Buffer
 
-    data := struct {
-        URL         string
-        SAMLRequest string
-        RelayState  string
-    }{
-        URL:         sp.IdentityProviderSSOURL,
-        SAMLRequest: encodedReqBuf,
-        RelayState:  relayState,
-    }
+    if relayState != "" {
+        tmpl = template.Must(template.New("saml-post-form").Parse(`` +
+            `<form method="POST" action="{{.URL}}" id="SAMLRequestForm">` +
+            `<input type="hidden" name="SAMLRequest" value="{{.SAMLRequest}}" />` +
+            `<input type="hidden" name="RelayState" value="{{.RelayState}}" />` +
+            `<input id="SAMLSubmitButton" type="submit" value="Submit" />` +
+            `</form>` +
+            `<script>document.getElementById('SAMLSubmitButton').style.visibility="hidden";` +
+            `document.getElementById('SAMLRequestForm').submit();</script>`))
 
-    rv := bytes.Buffer{}
-    if err = tmpl.Execute(&rv, data); err != nil {
-		return nil, err
+        data := struct {
+            URL         string
+            SAMLRequest string
+            RelayState  string
+        }{
+            URL:         sp.IdentityProviderSSOURL,
+            SAMLRequest: encodedReqBuf,
+            RelayState:  relayState,
+        }
+        if err = tmpl.Execute(&rv, data); err != nil {
+            return nil, err
+        }
+    } else {
+        tmpl = template.Must(template.New("saml-post-form").Parse(`` +
+            `<form method="POST" action="{{.URL}}" id="SAMLRequestForm">` +
+            `<input type="hidden" name="SAMLRequest" value="{{.SAMLRequest}}" />` +
+            `<input id="SAMLSubmitButton" type="submit" value="Submit" />` +
+            `</form>` +
+            `<script>document.getElementById('SAMLSubmitButton').style.visibility="hidden";` +
+            `document.getElementById('SAMLRequestForm').submit();</script>`))
+
+        data := struct {
+            URL         string
+            SAMLRequest string
+        }{
+            URL:         sp.IdentityProviderSSOURL,
+            SAMLRequest: encodedReqBuf,
+        }
+        if err = tmpl.Execute(&rv, data); err != nil {
+            return nil, err
+        }
     }
 
     return rv.Bytes(), nil

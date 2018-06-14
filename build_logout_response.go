@@ -89,27 +89,6 @@ func (sp *SAMLServiceProvider) buildLogoutResponseBodyPostFromDocument(relayStat
 
     encodedRespBuf := base64.StdEncoding.EncodeToString(respBuf)
 
-/*
-	tmpl := template.Must(template.New("saml-post-form").Parse(`` +
-		`<form method="POST" action="{{.URL}}" id="SAMLRequestForm">` +
-		`<input type="hidden" name="SAMLRequest" value="{{.SAMLRequest}}" />` +
-		`<input type="hidden" name="RelayState" value="{{.RelayState}}" />` +
-		`<input id="SAMLSubmitButton" type="submit" value="Submit" />` +
-		`</form>` +
-		`<script>document.getElementById('SAMLSubmitButton').style.visibility="hidden";` +
-		`document.getElementById('SAMLRequestForm').submit();</script>`))
-
-    data := struct {
-        URL         string
-        SAMLRequest string
-        RelayState  string
-    }{
-        URL:         sp.IdentityProviderSSOURL,
-        SAMLRequest: encodedReqBuf,
-        RelayState:  relayState,
-    }
-*/
-
     var tmpl *template.Template
     var rv bytes.Buffer
 
@@ -153,7 +132,6 @@ func (sp *SAMLServiceProvider) buildLogoutResponseBodyPostFromDocument(relayStat
             SAMLResponse: encodedRespBuf,
         }
 
-        //rv := bytes.Buffer{}
         if err = tmpl.Execute(&rv, data); err != nil {
             return nil, err
         }
