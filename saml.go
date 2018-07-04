@@ -172,9 +172,6 @@ func (sp *SAMLServiceProvider) MetadataWithSLO() (*types.EntityDescriptor, error
 				Index:    1,
 			}},
 			SingleLogoutServices: []types.Endpoint{{
-				Binding:  BindingHttpRedirect,
-				Location: sp.ServiceProviderSLOURL,
-			}, {
 				Binding:  BindingHttpPost,
 				Location: sp.ServiceProviderSLOURL,
             }},
