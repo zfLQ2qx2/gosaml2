@@ -328,7 +328,7 @@ func (sp *SAMLServiceProvider) buildLogoutRequest(includeSig bool, nameID string
 	logoutRequest.CreateAttr("ID", "_"+arId.String())
 	logoutRequest.CreateAttr("Version", "2.0")
 	logoutRequest.CreateAttr("IssueInstant", sp.Clock.Now().UTC().Format(issueInstantFormat))
-	logoutRequest.CreateAttr("Destination", sp.IdentityProviderSSOURL)
+	logoutRequest.CreateAttr("Destination", sp.IdentityProviderSLOURL)
 
 	// NOTE(russell_h): In earlier versions we mistakenly sent the IdentityProviderIssuer
 	// in the AuthnRequest. For backwards compatibility we will fall back to that
