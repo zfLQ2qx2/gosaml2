@@ -420,7 +420,7 @@ func (sp *SAMLServiceProvider) buildLogoutBodyPostFromDocument(relayState string
         SAMLRequest string
         RelayState  string
     }{
-        URL:         sp.IdentityProviderSSOURL,
+        URL:         sp.IdentityProviderSLOURL,
         SAMLRequest: encodedReqBuf,
         RelayState:  relayState,
     }
@@ -438,7 +438,7 @@ func (sp *SAMLServiceProvider) BuildLogoutURLRedirect(relayState string, doc *et
 }
 
 func (sp *SAMLServiceProvider) buildLogoutURLFromDocument(relayState, binding string, doc *etree.Document) (string, error) {
-	parsedUrl, err := url.Parse(sp.IdentityProviderSSOURL)
+	parsedUrl, err := url.Parse(sp.IdentityProviderSLOURL)
 	if err != nil {
 		return "", err
 	}
