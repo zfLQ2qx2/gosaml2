@@ -314,7 +314,7 @@ func (sp *SAMLServiceProvider) AuthRedirect(w http.ResponseWriter, r *http.Reque
 }
 
 
-func (sp *SAMLServiceProvider) buildLogoutRequest(includeSig bool, nameID string) (*etree.Document, error) {
+func (sp *SAMLServiceProvider) buildLogoutRequest(includeSig bool, nameID string, sessionIndex string) (*etree.Document, error) {
 	logoutRequest := &etree.Element{
 		Space: "samlp",
 		Tag:   "LogoutRequest",
@@ -344,6 +344,15 @@ func (sp *SAMLServiceProvider) buildLogoutRequest(includeSig bool, nameID string
 	nameId := logoutRequest.CreateElement("saml:NameID")
     nameId.SetText(nameID)
 	nameId.CreateAttr("Format", sp.NameIdFormat)
+
+    //Section 3.7.1 - http://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf says
+    //SessionIndex is optional. If the IDP supports SLO then it must send SessionIndex as per
+    //Section 4.1.4.2 of https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf.
+    //As per section 4.4.3.1 of //docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf,
+    //a LogoutRequest issued by Session Participant to Identity Provider, must contain
+    //at least one SessionIndex element needs to be included.
+	nameId = logoutRequest.CreateElement("samlp:SessionIndex")
+    nameId.SetText(sessionIndex)
 
 	doc := etree.NewDocument()
 
@@ -383,12 +392,12 @@ func (sp *SAMLServiceProvider) SignLogoutRequest(el *etree.Element) (*etree.Elem
 
 
 
-func (sp *SAMLServiceProvider) BuildLogoutRequestDocumentNoSig(nameID string) (*etree.Document, error) {
-	return sp.buildLogoutRequest(false, nameID)
+func (sp *SAMLServiceProvider) BuildLogoutRequestDocumentNoSig(nameID string, sessionIndex string) (*etree.Document, error) {
+	return sp.buildLogoutRequest(false, nameID, sessionIndex)
 }
 
-func (sp *SAMLServiceProvider) BuildLogoutRequestDocument(nameID string) (*etree.Document, error) {
-	return sp.buildLogoutRequest(true, nameID)
+func (sp *SAMLServiceProvider) BuildLogoutRequestDocument(nameID string, sessionIndex string) (*etree.Document, error) {
+	return sp.buildLogoutRequest(true, nameID, sessionIndex)
 }
 
 
@@ -405,29 +414,50 @@ func (sp *SAMLServiceProvider) buildLogoutBodyPostFromDocument(relayState string
     }
 
     encodedReqBuf := base64.StdEncoding.EncodeToString(reqBuf)
+    var tmpl *template.Template
+    var rv bytes.Buffer
 
-	tmpl := template.Must(template.New("saml-post-form").Parse(`` +
-		`<form method="POST" action="{{.URL}}" id="SAMLRequestForm">` +
-		`<input type="hidden" name="SAMLRequest" value="{{.SAMLRequest}}" />` +
-		`<input type="hidden" name="RelayState" value="{{.RelayState}}" />` +
-		`<input id="SAMLSubmitButton" type="submit" value="Submit" />` +
-		`</form>` +
-		`<script>document.getElementById('SAMLSubmitButton').style.visibility="hidden";` +
-		`document.getElementById('SAMLRequestForm').submit();</script>`))
+    if relayState != "" {
+        tmpl = template.Must(template.New("saml-post-form").Parse(`` +
+            `<form method="POST" action="{{.URL}}" id="SAMLRequestForm">` +
+            `<input type="hidden" name="SAMLRequest" value="{{.SAMLRequest}}" />` +
+            `<input type="hidden" name="RelayState" value="{{.RelayState}}" />` +
+            `<input id="SAMLSubmitButton" type="submit" value="Submit" />` +
+            `</form>` +
+            `<script>document.getElementById('SAMLSubmitButton').style.visibility="hidden";` +
+            `document.getElementById('SAMLRequestForm').submit();</script>`))
 
-    data := struct {
-        URL         string
-        SAMLRequest string
-        RelayState  string
-    }{
-        URL:         sp.IdentityProviderSLOURL,
-        SAMLRequest: encodedReqBuf,
-        RelayState:  relayState,
-    }
+        data := struct {
+            URL         string
+            SAMLRequest string
+            RelayState  string
+        }{
+            URL:         sp.IdentityProviderSLOURL,
+            SAMLRequest: encodedReqBuf,
+            RelayState:  relayState,
+        }
+        if err = tmpl.Execute(&rv, data); err != nil {
+            return nil, err
+        }
+    } else {
+        tmpl = template.Must(template.New("saml-post-form").Parse(`` +
+            `<form method="POST" action="{{.URL}}" id="SAMLRequestForm">` +
+            `<input type="hidden" name="SAMLRequest" value="{{.SAMLRequest}}" />` +
+            `<input id="SAMLSubmitButton" type="submit" value="Submit" />` +
+            `</form>` +
+            `<script>document.getElementById('SAMLSubmitButton').style.visibility="hidden";` +
+            `document.getElementById('SAMLRequestForm').submit();</script>`))
 
-    rv := bytes.Buffer{}
-    if err = tmpl.Execute(&rv, data); err != nil {
-		return nil, err
+        data := struct {
+            URL         string
+            SAMLRequest string
+        }{
+            URL:         sp.IdentityProviderSLOURL,
+            SAMLRequest: encodedReqBuf,
+        }
+        if err = tmpl.Execute(&rv, data); err != nil {
+            return nil, err
+        }
     }
 
     return rv.Bytes(), nil

@@ -247,6 +247,7 @@ type AssertionInfo struct {
 	NameID                     string
 	Values                     Values
 	WarningInfo                *WarningInfo
+	SessionIndex               string
 	AuthnInstant               *time.Time
 	SessionNotOnOrAfter        *time.Time
 	Assertions                 []types.Assertion

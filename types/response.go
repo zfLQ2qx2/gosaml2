@@ -162,6 +162,11 @@ type AttributeValue struct {
 
 type AuthnStatement struct {
 	XMLName             xml.Name      `xml:"urn:oasis:names:tc:SAML:2.0:assertion AuthnStatement"`
+    //Section 4.1.4.2 - https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf
+    //If the identity provider supports the Single Logout profile, defined in Section 4.4
+    //, any such authentication statements MUST include a SessionIndex attribute to enable 
+    //per-session logout requests by the service provider.
+    SessionIndex        string        `xml:"SessionIndex,attr,omitempty"`
 	AuthnInstant        *time.Time    `xml:"AuthnInstant,attr,omitempty"`
 	SessionNotOnOrAfter *time.Time    `xml:"SessionNotOnOrAfter,attr,omitempty"`
 	AuthnContext        *AuthnContext `xml:"AuthnContext"`
