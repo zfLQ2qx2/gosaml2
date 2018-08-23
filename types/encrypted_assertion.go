@@ -17,13 +17,6 @@ type EncryptedAssertion struct {
 	CipherValue      string           `xml:"EncryptedData>CipherData>CipherValue"`
 }
 
-func ZeroUnPadding(origData []byte) []byte {
-    return bytes.TrimFunc(origData,
-        func(r rune) bool {
-            return r == rune(0)
-        })
-}
-
 func (ea *EncryptedAssertion) DecryptBytes(cert *tls.Certificate) ([]byte, error) {
 	data, err := base64.StdEncoding.DecodeString(ea.CipherValue)
 	if err != nil {
