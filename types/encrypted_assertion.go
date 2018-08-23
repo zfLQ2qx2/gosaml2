@@ -17,6 +17,13 @@ type EncryptedAssertion struct {
 	CipherValue      string           `xml:"EncryptedData>CipherData>CipherValue"`
 }
 
+func ZeroUnPadding(origData []byte) []byte {
+    return bytes.TrimFunc(origData,
+        func(r rune) bool {
+            return r == rune(0)
+        })
+}
+
 func (ea *EncryptedAssertion) DecryptBytes(cert *tls.Certificate) ([]byte, error) {
 	data, err := base64.StdEncoding.DecodeString(ea.CipherValue)
 	if err != nil {
@@ -48,7 +55,7 @@ func (ea *EncryptedAssertion) DecryptBytes(cert *tls.Certificate) ([]byte, error
 			return nil, fmt.Errorf("cannot open AES-GCM: %s", err)
 		}
 		return plainText, nil
-	case MethodAES128CBC, MethodAES256CBC:
+	case MethodAES128CBC, MethodAES256CBC, MethodTripleDESCBC:
 		nonce, data := data[:k.BlockSize()], data[k.BlockSize():]
 		c := cipher.NewCBCDecrypter(k, nonce)
 		c.CryptBlocks(data, data)

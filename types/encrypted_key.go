@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/des"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
@@ -41,6 +42,7 @@ type DigestMethod struct {
 const (
 	MethodRSAOAEP  = "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"
 	MethodRSAOAEP2 = "http://www.w3.org/2009/xmlenc11#rsa-oaep"
+	MethodRSAv1_5 = "http://www.w3.org/2001/04/xmlenc#rsa-1_5"
 )
 
 //Well-known private key encryption methods
@@ -48,6 +50,7 @@ const (
 	MethodAES128GCM = "http://www.w3.org/2009/xmlenc11#aes128-gcm"
 	MethodAES128CBC = "http://www.w3.org/2001/04/xmlenc#aes128-cbc"
 	MethodAES256CBC = "http://www.w3.org/2001/04/xmlenc#aes256-cbc"
+    MethodTripleDESCBC = "http://www.w3.org/2001/04/xmlenc#tripledes-cbc"
 )
 
 //Well-known hash methods
@@ -132,6 +135,26 @@ func (ek *EncryptedKey) DecryptSymmetricKey(cert *tls.Certificate) (cipher.Block
 			}
 
 			return b, nil
+        case MethodRSAv1_5:
+            pt, err := rsa.DecryptPKCS1v15(rand.Reader, pk, cipherText)
+            if err != nil {
+                return nil, fmt.Errorf("rsa internal error: %v", err)
+            }
+
+            //From https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf the xml encryption
+            //methods to be supported are from http://www.w3.org/2001/04/xmlenc#Element.
+            //https://www.w3.org/TR/2002/REC-xmlenc-core-20021210/Overview.html#Element.
+            //https://www.w3.org/TR/2002/REC-xmlenc-core-20021210/#sec-Algorithms
+            //Sec 5.4 Key Transport:
+            //The RSA v1.5 Key Transport algorithm given below are those used in conjunction with TRIPLEDES
+            //Please also see https://www.w3.org/TR/xmlenc-core/#sec-Algorithms and
+            //https://www.w3.org/TR/xmlenc-core/#rsav15note.
+            b, err := des.NewTripleDESCipher(pt)
+            if err != nil {
+                return nil, err
+            }
+
+            return b, nil
 		default:
 			return nil, fmt.Errorf("unsupported encryption algorithm: %s", ek.EncryptionMethod.Algorithm)
 		}
