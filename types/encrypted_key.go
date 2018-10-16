@@ -30,7 +30,12 @@ type EncryptedKey struct {
 //EncryptionMethod specifies the type of encryption that was used.
 type EncryptionMethod struct {
 	Algorithm    string       `xml:",attr,omitempty"`
-	DigestMethod DigestMethod `xml:",omitempty"`
+    //Digest method is present for algorithms like RSA-OAEP.
+    //See https://www.w3.org/TR/xmlenc-core1/.
+    //To convey the digest methods an entity supports, 
+    //DigestMethod in extensions element is used.
+    //See http://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport.html.
+	DigestMethod *DigestMethod `xml:",omitempty"`
 }
 
 //DigestMethod is a digest type specification
@@ -107,6 +112,12 @@ func (ek *EncryptedKey) DecryptSymmetricKey(cert *tls.Certificate) (cipher.Block
 	switch pk := cert.PrivateKey.(type) {
 	case *rsa.PrivateKey:
 		var h hash.Hash
+
+        if ek.EncryptionMethod.DigestMethod == nil {
+            //if digest method is not present lets set default method to SHA1.
+            //Digest method is used by methods like RSA-OAEP.
+            h = sha1.New()
+        }
 
 		switch ek.EncryptionMethod.DigestMethod.Algorithm {
 		case "", MethodSHA1:
