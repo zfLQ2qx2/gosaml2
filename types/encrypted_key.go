@@ -117,19 +117,19 @@ func (ek *EncryptedKey) DecryptSymmetricKey(cert *tls.Certificate) (cipher.Block
             //if digest method is not present lets set default method to SHA1.
             //Digest method is used by methods like RSA-OAEP.
             h = sha1.New()
+        } else {
+            switch ek.EncryptionMethod.DigestMethod.Algorithm {
+            case "", MethodSHA1:
+                h = sha1.New() // default
+            case MethodSHA256:
+                h = sha256.New()
+            case MethodSHA512:
+                h = sha512.New()
+            default:
+                return nil, fmt.Errorf("unsupported digest algorithm: %v",
+                    ek.EncryptionMethod.DigestMethod.Algorithm)
+            }
         }
-
-		switch ek.EncryptionMethod.DigestMethod.Algorithm {
-		case "", MethodSHA1:
-			h = sha1.New() // default
-		case MethodSHA256:
-			h = sha256.New()
-		case MethodSHA512:
-			h = sha512.New()
-		default:
-			return nil, fmt.Errorf("unsupported digest algorithm: %v",
-				ek.EncryptionMethod.DigestMethod.Algorithm)
-		}
 
 		switch ek.EncryptionMethod.Algorithm {
 		case "":
