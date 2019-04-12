@@ -154,39 +154,7 @@ func (sp *SAMLServiceProvider) buildAuthURLFromDocument(relayState, binding stri
 		ctx := sp.SigningContext()
 		qs.Add("SigAlg", ctx.GetSignatureMethodIdentifier())
 		var rawSignature []byte
-        //qs.Encode() sorts the keys (See https://golang.org/pkg/net/url/#Values.Encode). 
-        //If RelayState parameter is present then RelayState parameter 
-        //will be put first by Encode(). Hence encode them separately and concatenate.
-        //Signature string has to have parameters in the order - SAMLRequest=value&RelayState=value&SigAlg=value.
-        //(See Section 3.4.4.1 saml-bindings-2.0-os.pdf).
-        var orderedParams = []string{"SAMLRequest", "RelayState", "SigAlg"}
-
-        var paramValueMap = make(map[string]string)
-        paramValueMap["SAMLRequest"] = base64.StdEncoding.EncodeToString(buf.Bytes())
-        if relayState != "" {
-            paramValueMap["RelayState"] = relayState
-        }
-        paramValueMap["SigAlg"] = ctx.GetSignatureMethodIdentifier()
-
-        ss := ""
-
-        for _, k := range orderedParams {
-            v, ok := paramValueMap[k] 
-            if ok {
-                //Add the value after URL encoding.
-                u := url.Values{}
-                u.Add(k, v)
-                e := u.Encode()
-                if ss != "" {
-                    ss += "&" + e
-                } else {
-                    ss = e
-                }
-            }
-        }
-
-        //Now generate the signature on the string of ordered parameters.
-		if rawSignature, err = ctx.SignString(ss); err != nil {
+		if rawSignature, err = ctx.SignString(signatureInputString(qs.Get("SAMLRequest"), qs.Get("RelayState"), qs.Get("SigAlg"))); err != nil {
 			return "", fmt.Errorf("unable to sign query string of redirect URL: %v", err)
 		}
 
@@ -312,7 +280,6 @@ func (sp *SAMLServiceProvider) AuthRedirect(w http.ResponseWriter, r *http.Reque
 	http.Redirect(w, r, url, http.StatusFound)
 	return nil
 }
-
 
 func (sp *SAMLServiceProvider) buildLogoutRequest(includeSig bool, nameID string, sessionIndex string) (*etree.Document, error) {
 	logoutRequest := &etree.Element{
@@ -554,3 +521,24 @@ func (sp *SAMLServiceProvider) buildLogoutURLFromDocument(relayState, binding st
 }
 
 
+// signatureInputString constructs the string to be fed into the signature algorithm, as described
+// in section 3.4.4.1 of
+// https://www.oasis-open.org/committees/download.php/56779/sstc-saml-bindings-errata-2.0-wd-06.pdf
+func signatureInputString(samlRequest, relayState, sigAlg string) string {
+	var params [][2]string
+	if relayState == "" {
+		params = [][2]string{{"SAMLRequest", samlRequest}, {"SigAlg", sigAlg}}
+	} else {
+		params = [][2]string{{"SAMLRequest", samlRequest}, {"RelayState", relayState}, {"SigAlg", sigAlg}}
+	}
+
+	var buf bytes.Buffer
+	for _, kv := range params {
+		k, v := kv[0], kv[1]
+		if buf.Len() > 0 {
+			buf.WriteByte('&')
+		}
+		buf.WriteString(url.QueryEscape(k) + "=" + url.QueryEscape(v))
+	}
+	return buf.String()
+}
