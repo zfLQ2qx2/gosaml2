@@ -59,6 +59,29 @@ func (sp *SAMLServiceProvider) validateResponseAttributes(response *types.Respon
 	return nil
 }
 
+// validateLogoutResponseAttributes validates a SAML Response's tag and attributes. It does
+// not inspect child elements of the Response at all.
+func (sp *SAMLServiceProvider) validateLogoutResponseAttributes(response *types.LogoutResponse) error {
+	if response.Destination != "" && response.Destination != sp.ServiceProviderSLOURL {
+		return ErrInvalidValue{
+			Key:      DestinationAttr,
+			Expected: sp.ServiceProviderSLOURL,
+			Actual:   response.Destination,
+		}
+	}
+
+	if response.Version != "2.0" {
+		return ErrInvalidValue{
+			Reason:   ReasonUnsupported,
+			Key:      "SAML version",
+			Expected: "2.0",
+			Actual:   response.Version,
+		}
+	}
+
+	return nil
+}
+
 func xmlUnmarshalElement(el *etree.Element, obj interface{}) error {
 	doc := etree.NewDocument()
 	doc.SetRoot(el)
@@ -348,3 +371,111 @@ func parseResponse(xml []byte) (*etree.Document, *etree.Element, error) {
 
 	return doc, el, nil
 }
+
+// DecodeUnverifiedLogoutResponse decodes several attributes from a SAML Logout response, without doing any verifications.
+func DecodeUnverifiedLogoutResponse(encodedResponse string) (*types.LogoutResponse, error) {
+	raw, err := base64.StdEncoding.DecodeString(encodedResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	var response *types.LogoutResponse
+
+	err = maybeDeflate(raw, func(maybeXML []byte) error {
+		response = &types.LogoutResponse{}
+		return xml.Unmarshal(maybeXML, response)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (sp *SAMLServiceProvider) ValidateEncodedLogoutResponsePOST(encodedResponse string) (*types.LogoutResponse, error) {
+	raw, err := base64.StdEncoding.DecodeString(encodedResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the raw response
+	doc, el, err := parseResponse(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	var responseSignatureValidated bool
+	if !sp.SkipSignatureValidation {
+		el, err = sp.validateElementSignature(el)
+		if err == dsig.ErrMissingSignature {
+			// Unfortunately we just blew away our Response
+			el = doc.Root()
+		} else if err != nil {
+			return nil, err
+		} else if el == nil {
+			return nil, fmt.Errorf("missing transformed logout response")
+		} else {
+			responseSignatureValidated = true
+		}
+	}
+
+	decodedResponse := &types.LogoutResponse{}
+	err = xmlUnmarshalElement(el, decodedResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal logout response: %v", err)
+	}
+	decodedResponse.SignatureValidated = responseSignatureValidated
+
+	err = sp.ValidateDecodedLogoutResponse(decodedResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return decodedResponse, nil
+}
+
+/*
+func (sp *SAMLServiceProvider) ValidateEncodedLogoutResponseRedirect(encodedResponse string) (*types.LogoutResponse, error) {
+	raw, err := base64.StdEncoding.DecodeString(encodedResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the raw response
+	doc, el, err := parseResponse(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	var responseSignatureValidated bool
+	if !sp.SkipSignatureValidation {
+		el, err = sp.validateElementSignature(el)
+		if err == dsig.ErrMissingSignature {
+			// Unfortunately we just blew away our Response
+			el = doc.Root()
+		} else if err != nil {
+			return nil, err
+		} else if el == nil {
+			return nil, fmt.Errorf("missing transformed logout response")
+		} else {
+			responseSignatureValidated = true
+		}
+	}
+
+	decodedResponse := &types.LogoutResponse{}
+	err = xmlUnmarshalElement(el, decodedResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal logout response: %v", err)
+	}
+	decodedResponse.SignatureValidated = responseSignatureValidated
+
+	err = sp.Validate(decodedResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return decodedResponse, nil
+}
+*/
+
+

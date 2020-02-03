@@ -61,7 +61,7 @@ func (ea *EncryptedAssertion) DecryptBytes(cert *tls.Certificate) ([]byte, error
 			return nil, fmt.Errorf("cannot open AES-GCM: %s", err)
 		}
 		return plainText, nil
-	case MethodAES128CBC, MethodAES256CBC:
+	case MethodAES128CBC, MethodAES256CBC, MethodTripleDESCBC:
 		nonce, data := data[:k.BlockSize()], data[k.BlockSize():]
 		c := cipher.NewCBCDecrypter(k, nonce)
 		c.CryptBlocks(data, data)
