@@ -477,5 +477,3 @@ func (sp *SAMLServiceProvider) ValidateEncodedLogoutResponseRedirect(encodedResp
 	return decodedResponse, nil
 }
 */
-
-

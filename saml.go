@@ -36,14 +36,14 @@ func (serr ErrSaml) Error() string {
 }
 
 type SAMLServiceProvider struct {
-	IdentityProviderSSOURL string
+	IdentityProviderSSOURL     string
 	IdentityProviderSSOBinding string
-	IdentityProviderSLOURL string
+	IdentityProviderSLOURL     string
 	IdentityProviderSLOBinding string
-	IdentityProviderIssuer string
+	IdentityProviderIssuer     string
 
 	AssertionConsumerServiceURL string
-	ServiceProviderSLOURL string
+	ServiceProviderSLOURL       string
 	ServiceProviderIssuer       string
 
 	SignAuthnRequests              bool
@@ -146,56 +146,56 @@ func (sp *SAMLServiceProvider) MetadataWithSLO(validityHours int64) (*types.Enti
 		return nil, err
 	}
 
-    if validityHours <= 0 {
-        //By default let's keep it to 7 days.
-        validityHours = int64(time.Hour * 24 * 7)
-    }
+	if validityHours <= 0 {
+		//By default let's keep it to 7 days.
+		validityHours = int64(time.Hour * 24 * 7)
+	}
 
-    return &types.EntityDescriptor{
-        ValidUntil: time.Now().UTC().Add(time.Duration(validityHours)), // default 7 days
-        EntityID:   sp.ServiceProviderIssuer,
-        SPSSODescriptor: &types.SPSSODescriptor{
-            AuthnRequestsSigned:        sp.SignAuthnRequests,
-            WantAssertionsSigned:       !sp.SkipSignatureValidation,
-            ProtocolSupportEnumeration: SAMLProtocolNamespace,
-            KeyDescriptors: []types.KeyDescriptor{
-                {
-                    Use: "signing",
-                    KeyInfo: dsigtypes.KeyInfo{
-                        X509Data: dsigtypes.X509Data{
-                            X509Certificates: []dsigtypes.X509Certificate{dsigtypes.X509Certificate{
-                                Data: base64.StdEncoding.EncodeToString(signingCertBytes),
-                            }},
-                        },
-                    },
-                },
-                {
-                    Use: "encryption",
-                    KeyInfo: dsigtypes.KeyInfo{
-                        X509Data: dsigtypes.X509Data{
-                            X509Certificates: []dsigtypes.X509Certificate{dsigtypes.X509Certificate{
-                                Data: base64.StdEncoding.EncodeToString(encryptionCertBytes),
-                            }},
-                        },
-                    },
-                    EncryptionMethods: []types.EncryptionMethod{
+	return &types.EntityDescriptor{
+		ValidUntil: time.Now().UTC().Add(time.Duration(validityHours)), // default 7 days
+		EntityID:   sp.ServiceProviderIssuer,
+		SPSSODescriptor: &types.SPSSODescriptor{
+			AuthnRequestsSigned:        sp.SignAuthnRequests,
+			WantAssertionsSigned:       !sp.SkipSignatureValidation,
+			ProtocolSupportEnumeration: SAMLProtocolNamespace,
+			KeyDescriptors: []types.KeyDescriptor{
+				{
+					Use: "signing",
+					KeyInfo: dsigtypes.KeyInfo{
+						X509Data: dsigtypes.X509Data{
+							X509Certificates: []dsigtypes.X509Certificate{dsigtypes.X509Certificate{
+								Data: base64.StdEncoding.EncodeToString(signingCertBytes),
+							}},
+						},
+					},
+				},
+				{
+					Use: "encryption",
+					KeyInfo: dsigtypes.KeyInfo{
+						X509Data: dsigtypes.X509Data{
+							X509Certificates: []dsigtypes.X509Certificate{dsigtypes.X509Certificate{
+								Data: base64.StdEncoding.EncodeToString(encryptionCertBytes),
+							}},
+						},
+					},
+					EncryptionMethods: []types.EncryptionMethod{
 						{Algorithm: types.MethodAES128GCM, DigestMethod: nil},
 						{Algorithm: types.MethodAES128CBC, DigestMethod: nil},
 						{Algorithm: types.MethodAES256CBC, DigestMethod: nil},
-                    },
-                },
-            },
-            AssertionConsumerServices: []types.IndexedEndpoint{{
-                Binding:  BindingHttpPost,
-                Location: sp.AssertionConsumerServiceURL,
-                Index:    1,
-            }},
-            SingleLogoutServices: []types.Endpoint{{
-                Binding:  BindingHttpPost,
-                Location: sp.ServiceProviderSLOURL,
-            }},
-        },
-    }, nil
+					},
+				},
+			},
+			AssertionConsumerServices: []types.IndexedEndpoint{{
+				Binding:  BindingHttpPost,
+				Location: sp.AssertionConsumerServiceURL,
+				Index:    1,
+			}},
+			SingleLogoutServices: []types.Endpoint{{
+				Binding:  BindingHttpPost,
+				Location: sp.ServiceProviderSLOURL,
+			}},
+		},
+	}, nil
 }
 
 func (sp *SAMLServiceProvider) GetEncryptionKey() dsig.X509KeyStore {

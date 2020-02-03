@@ -82,5 +82,3 @@ func (sp *SAMLServiceProvider) ValidateEncodedLogoutRequestPOST(encodedRequest s
 
 	return decodedRequest, nil
 }
-
-

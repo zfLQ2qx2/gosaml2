@@ -16,7 +16,7 @@ package saml2
 import (
 	"bytes"
 	"encoding/base64"
-    "html/template"
+	"html/template"
 
 	"github.com/beevik/etree"
 	"github.com/russellhaering/gosaml2/uuid"
@@ -96,67 +96,62 @@ func (sp *SAMLServiceProvider) SignLogoutResponse(el *etree.Element) (*etree.Ele
 
 func (sp *SAMLServiceProvider) buildLogoutResponseBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
 	respBuf, err := doc.WriteToBytes()
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    encodedRespBuf := base64.StdEncoding.EncodeToString(respBuf)
+	encodedRespBuf := base64.StdEncoding.EncodeToString(respBuf)
 
-    var tmpl *template.Template
-    var rv bytes.Buffer
+	var tmpl *template.Template
+	var rv bytes.Buffer
 
+	if relayState != "" {
+		tmpl = template.Must(template.New("saml-post-form").Parse(`<html>` +
+			`<form method="post" action="{{.URL}}" id="SAMLResponseForm">` +
+			`<input type="hidden" name="SAMLResponse" value="{{.SAMLResponse}}" />` +
+			`<input type="hidden" name="RelayState" value="{{.RelayState}}" />` +
+			`<input id="SAMLSubmitButton" type="submit" value="Continue" />` +
+			`</form>` +
+			`<script>document.getElementById('SAMLSubmitButton').style.visibility='hidden';</script>` +
+			`<script>document.getElementById('SAMLResponseForm').submit();</script>` +
+			`</html>`))
+		data := struct {
+			URL          string
+			SAMLResponse string
+			RelayState   string
+		}{
+			URL:          sp.IdentityProviderSLOURL,
+			SAMLResponse: encodedRespBuf,
+			RelayState:   relayState,
+		}
+		if err = tmpl.Execute(&rv, data); err != nil {
+			return nil, err
+		}
+	} else {
+		tmpl = template.Must(template.New("saml-post-form").Parse(`<html>` +
+			`<form method="post" action="{{.URL}}" id="SAMLResponseForm">` +
+			`<input type="hidden" name="SAMLResponse" value="{{.SAMLResponse}}" />` +
+			`<input id="SAMLSubmitButton" type="submit" value="Continue" />` +
+			`</form>` +
+			`<script>document.getElementById('SAMLSubmitButton').style.visibility='hidden';</script>` +
+			`<script>document.getElementById('SAMLResponseForm').submit();</script>` +
+			`</html>`))
+		data := struct {
+			URL          string
+			SAMLResponse string
+		}{
+			URL:          sp.IdentityProviderSLOURL,
+			SAMLResponse: encodedRespBuf,
+		}
 
-    if relayState != "" {
-        tmpl = template.Must(template.New("saml-post-form").Parse(`<html>` +
-            `<form method="post" action="{{.URL}}" id="SAMLResponseForm">` +
-            `<input type="hidden" name="SAMLResponse" value="{{.SAMLResponse}}" />` +
-            `<input type="hidden" name="RelayState" value="{{.RelayState}}" />` +
-            `<input id="SAMLSubmitButton" type="submit" value="Continue" />` +
-            `</form>` +
-            `<script>document.getElementById('SAMLSubmitButton').style.visibility='hidden';</script>` +
-            `<script>document.getElementById('SAMLResponseForm').submit();</script>` +
-            `</html>`))
-        data := struct {
-            URL          string
-            SAMLResponse string
-            RelayState   string
-        }{
-            URL:          sp.IdentityProviderSLOURL,
-            SAMLResponse: encodedRespBuf,
-            RelayState:   relayState,
-        }
-        if err = tmpl.Execute(&rv, data); err != nil {
-            return nil, err
-        }
-    } else {
-        tmpl = template.Must(template.New("saml-post-form").Parse(`<html>` +
-            `<form method="post" action="{{.URL}}" id="SAMLResponseForm">` +
-            `<input type="hidden" name="SAMLResponse" value="{{.SAMLResponse}}" />` +
-            `<input id="SAMLSubmitButton" type="submit" value="Continue" />` +
-            `</form>` +
-            `<script>document.getElementById('SAMLSubmitButton').style.visibility='hidden';</script>` +
-            `<script>document.getElementById('SAMLResponseForm').submit();</script>` +
-            `</html>`))
-        data := struct {
-            URL          string
-            SAMLResponse string
-        }{
-            URL:          sp.IdentityProviderSLOURL,
-            SAMLResponse: encodedRespBuf,
-        }
+		if err = tmpl.Execute(&rv, data); err != nil {
+			return nil, err
+		}
+	}
 
-        if err = tmpl.Execute(&rv, data); err != nil {
-            return nil, err
-        }
-    }
-
-    return rv.Bytes(), nil
+	return rv.Bytes(), nil
 }
-
-
 
 func (sp *SAMLServiceProvider) BuildLogoutResponseBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
-    return sp.buildLogoutResponseBodyPostFromDocument(relayState, doc)
+	return sp.buildLogoutResponseBodyPostFromDocument(relayState, doc)
 }
-
-

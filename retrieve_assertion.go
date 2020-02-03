@@ -102,7 +102,7 @@ func (sp *SAMLServiceProvider) RetrieveAssertionInfo(encodedResponse string) (*A
 			assertionInfo.SessionNotOnOrAfter = assertion.AuthnStatement.SessionNotOnOrAfter
 		}
 
-        assertionInfo.SessionIndex = assertion.AuthnStatement.SessionIndex
+		assertionInfo.SessionIndex = assertion.AuthnStatement.SessionIndex
 	}
 
 	assertionInfo.WarningInfo = warningInfo

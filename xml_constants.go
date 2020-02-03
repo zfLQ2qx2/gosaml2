@@ -59,8 +59,8 @@ const (
 	AuthnPolicyMatchMaximum = "maximum"
 	AuthnPolicyMatchBetter  = "better"
 
-	StatusCodeSuccess = "urn:oasis:names:tc:SAML:2.0:status:Success"
-	StatusCodePartialLogout = "urn:oasis:names:tc:SAML:2.0:status:PartialLogout"
+	StatusCodeSuccess          = "urn:oasis:names:tc:SAML:2.0:status:Success"
+	StatusCodePartialLogout    = "urn:oasis:names:tc:SAML:2.0:status:PartialLogout"
 	StatusCodeUnknownPrincipal = "urn:oasis:names:tc:SAML:2.0:status:UnknownPrincipal"
 
 	BindingHttpPost     = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
