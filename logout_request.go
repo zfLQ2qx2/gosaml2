@@ -15,7 +15,7 @@ package saml2
 
 import (
 	"encoding/xml"
-	"github.com/russellhaering/gosaml2/types"
+	"github.com/zfLQ2qx2/gosaml2/types"
 	"time"
 )
 

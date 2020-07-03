@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/russellhaering/gosaml2"
+	"github.com/zfLQ2qx2/gosaml2"
 )
 
 var oneLoginScenarioErrors = map[int]string{

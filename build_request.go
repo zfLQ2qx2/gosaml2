@@ -23,7 +23,7 @@ import (
 	"net/url"
 
 	"github.com/beevik/etree"
-	"github.com/russellhaering/gosaml2/uuid"
+	"github.com/zfLQ2qx2/gosaml2/uuid"
 )
 
 const issueInstantFormat = "2006-01-02T15:04:05Z"
@@ -55,9 +55,11 @@ func (sp *SAMLServiceProvider) buildAuthnRequest(includeSig bool) (*etree.Docume
 		authnRequest.CreateElement("saml:Issuer").SetText(sp.IdentityProviderIssuer)
 	}
 
-	nameIdPolicy := authnRequest.CreateElement("samlp:NameIDPolicy")
-	nameIdPolicy.CreateAttr("AllowCreate", "true")
-	nameIdPolicy.CreateAttr("Format", sp.NameIdFormat)
+	if sp.NameIdFormat != "" {
+		nameIdPolicy := authnRequest.CreateElement("samlp:NameIDPolicy")
+		nameIdPolicy.CreateAttr("AllowCreate", "true")
+		nameIdPolicy.CreateAttr("Format", sp.NameIdFormat)
+	}
 
 	if sp.RequestedAuthnContext != nil {
 		requestedAuthnContext := authnRequest.CreateElement("samlp:RequestedAuthnContext")
@@ -175,7 +177,7 @@ func (sp *SAMLServiceProvider) buildAuthURLFromDocument(relayState, binding stri
 		qs.Add("Signature", base64.StdEncoding.EncodeToString(rawSignature))
 	}
 
-	//Here the parameters may appear in any order.
+	// Here the parameters may appear in any order.
 	parsedUrl.RawQuery = qs.Encode()
 	return parsedUrl.String(), nil
 }
@@ -245,7 +247,7 @@ func (sp *SAMLServiceProvider) buildAuthBodyPostFromDocument(relayState string, 
 	return rv.Bytes(), nil
 }
 
-//BuildAuthBodyPost builds the POST body to be sent to IDP.
+// BuildAuthBodyPost builds the POST body to be sent to IDP.
 func (sp *SAMLServiceProvider) BuildAuthBodyPost(relayState string) ([]byte, error) {
 	var doc *etree.Document
 	var err error
@@ -263,8 +265,8 @@ func (sp *SAMLServiceProvider) BuildAuthBodyPost(relayState string) ([]byte, err
 	return sp.buildAuthBodyPostFromDocument(relayState, doc)
 }
 
-//BuildAuthBodyPostFromDocument builds the POST body to be sent to IDP.
-//It takes the AuthnRequest xml as input.
+// BuildAuthBodyPostFromDocument builds the POST body to be sent to IDP.
+// It takes the AuthnRequest xml as input.
 func (sp *SAMLServiceProvider) BuildAuthBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
 	return sp.buildAuthBodyPostFromDocument(relayState, doc)
 }
@@ -321,12 +323,12 @@ func (sp *SAMLServiceProvider) buildLogoutRequest(includeSig bool, nameID string
 	nameId.SetText(nameID)
 	nameId.CreateAttr("Format", sp.NameIdFormat)
 
-	//Section 3.7.1 - http://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf says
-	//SessionIndex is optional. If the IDP supports SLO then it must send SessionIndex as per
-	//Section 4.1.4.2 of https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf.
-	//As per section 4.4.3.1 of //docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf,
-	//a LogoutRequest issued by Session Participant to Identity Provider, must contain
-	//at least one SessionIndex element needs to be included.
+	// Section 3.7.1 - http://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf says
+	// SessionIndex is optional. If the IDP supports SLO then it must send SessionIndex as per
+	// Section 4.1.4.2 of https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf.
+	// As per section 4.4.3.1 of //docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf,
+	// a LogoutRequest issued by Session Participant to Identity Provider, must contain
+	// at least one SessionIndex element needs to be included.
 	nameId = logoutRequest.CreateElement("samlp:SessionIndex")
 	nameId.SetText(sessionIndex)
 
@@ -373,8 +375,8 @@ func (sp *SAMLServiceProvider) BuildLogoutRequestDocument(nameID string, session
 	return sp.buildLogoutRequest(true, nameID, sessionIndex)
 }
 
-//BuildLogoutBodyPostFromDocument builds the POST body to be sent to IDP.
-//It takes the LogoutRequest xml as input.
+// BuildLogoutBodyPostFromDocument builds the POST body to be sent to IDP.
+// It takes the LogoutRequest xml as input.
 func (sp *SAMLServiceProvider) BuildLogoutBodyPostFromDocument(relayState string, doc *etree.Document) ([]byte, error) {
 	return sp.buildLogoutBodyPostFromDocument(relayState, doc)
 }
@@ -480,11 +482,11 @@ func (sp *SAMLServiceProvider) buildLogoutURLFromDocument(relayState, binding st
 		ctx := sp.SigningContext()
 		qs.Add("SigAlg", ctx.GetSignatureMethodIdentifier())
 		var rawSignature []byte
-		//qs.Encode() sorts the keys (See https://golang.org/pkg/net/url/#Values.Encode).
-		//If RelayState parameter is present then RelayState parameter
-		//will be put first by Encode(). Hence encode them separately and concatenate.
-		//Signature string has to have parameters in the order - SAMLRequest=value&RelayState=value&SigAlg=value.
-		//(See Section 3.4.4.1 saml-bindings-2.0-os.pdf).
+		// qs.Encode() sorts the keys (See https://golang.org/pkg/net/url/#Values.Encode).
+		// If RelayState parameter is present then RelayState parameter
+		// will be put first by Encode(). Hence encode them separately and concatenate.
+		// Signature string has to have parameters in the order - SAMLRequest=value&RelayState=value&SigAlg=value.
+		// (See Section 3.4.4.1 saml-bindings-2.0-os.pdf).
 		var orderedParams = []string{"SAMLRequest", "RelayState", "SigAlg"}
 
 		var paramValueMap = make(map[string]string)
@@ -499,7 +501,7 @@ func (sp *SAMLServiceProvider) buildLogoutURLFromDocument(relayState, binding st
 		for _, k := range orderedParams {
 			v, ok := paramValueMap[k]
 			if ok {
-				//Add the value after URL encoding.
+				// Add the value after URL encoding.
 				u := url.Values{}
 				u.Add(k, v)
 				e := u.Encode()
@@ -511,7 +513,7 @@ func (sp *SAMLServiceProvider) buildLogoutURLFromDocument(relayState, binding st
 			}
 		}
 
-		//Now generate the signature on the string of ordered parameters.
+		// Now generate the signature on the string of ordered parameters.
 		if rawSignature, err = ctx.SignString(ss); err != nil {
 			return "", fmt.Errorf("unable to sign query string of redirect URL: %v", err)
 		}
@@ -520,7 +522,7 @@ func (sp *SAMLServiceProvider) buildLogoutURLFromDocument(relayState, binding st
 		qs.Add("Signature", base64.StdEncoding.EncodeToString(rawSignature))
 	}
 
-	//Here the parameters may appear in any order.
+	// Here the parameters may appear in any order.
 	parsedUrl.RawQuery = qs.Encode()
 	return parsedUrl.String(), nil
 }

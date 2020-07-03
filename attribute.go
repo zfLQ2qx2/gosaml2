@@ -13,7 +13,7 @@
 // limitations under the License.
 package saml2
 
-import "github.com/russellhaering/gosaml2/types"
+import "github.com/zfLQ2qx2/gosaml2/types"
 
 // Values is a convenience wrapper for a map of strings to Attributes, which
 // can be used for easy access to the string values of Attribute lists.

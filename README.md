@@ -27,8 +27,11 @@ submit a bug or pull request.
 
 The following identity providers have been tested:
 
-* Okta
 * Auth0
-* Shibboleth
+* Idaptive
 * Ipsilon
+* Microsoft Active Directory Federation Services (AD FS)
+* Microsoft Azure AD
+* Okta
 * OneLogin
+* Shibboleth

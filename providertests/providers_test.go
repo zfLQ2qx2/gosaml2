@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/russellhaering/gosaml2"
+	"github.com/zfLQ2qx2/gosaml2"
 	"github.com/russellhaering/goxmldsig"
 )
 

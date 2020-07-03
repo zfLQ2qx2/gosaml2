@@ -23,9 +23,9 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 
-	saml2 "github.com/russellhaering/gosaml2"
-	"github.com/russellhaering/gosaml2/types"
 	dsig "github.com/russellhaering/goxmldsig"
+	saml2 "github.com/zfLQ2qx2/gosaml2"
+	"github.com/zfLQ2qx2/gosaml2/types"
 )
 
 func main() {
@@ -86,23 +86,23 @@ func main() {
 	http.HandleFunc("/v1/_saml_callback", func(rw http.ResponseWriter, req *http.Request) {
 		err := req.ParseForm()
 		if err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
+			http.Error(rw, "Failed to parse form: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		assertionInfo, err := sp.RetrieveAssertionInfo(req.FormValue("SAMLResponse"))
 		if err != nil {
-			rw.WriteHeader(http.StatusForbidden)
+			http.Error(rw, "Failed to retrieve assertion info: "+err.Error(), http.StatusForbidden)
 			return
 		}
 
 		if assertionInfo.WarningInfo.InvalidTime {
-			rw.WriteHeader(http.StatusForbidden)
+			http.Error(rw, "Invalid time", http.StatusForbidden)
 			return
 		}
 
 		if assertionInfo.WarningInfo.NotInAudience {
-			rw.WriteHeader(http.StatusForbidden)
+			http.Error(rw, "Not in audience", http.StatusForbidden)
 			return
 		}
 
